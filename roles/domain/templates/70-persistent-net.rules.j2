@@ -1,0 +1,3 @@
+{% for row in domiflist.results %}
+SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="{{row.stdout.split()[-1]}}", ATTR{type}=="1", NAME="{{row.item.alias}}"
+{% endfor %}

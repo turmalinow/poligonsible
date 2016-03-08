@@ -1,0 +1,58 @@
+- name: check domain running
+  virt: name={{ domain }} command=status
+  register: domain_status
+  ignore_errors: yes
+
+- name: copy distro image to volume directory
+  copy: src={{ images_directory }}/{{ image_name }} dest={{ volumes_directory }}/{{ volume_name }}
+  when: domain_status|failed or domain_status.status != 'running'
+
+- name: prepare dir
+  file: state=directory path={{ workdir }}/{{ domain }}
+
+- name: check keypair
+  stat: path={{ workdir }}/{{ domain }}/id_rsa
+  register: keypair_stat
+
+- name: prepare keypair
+  shell: ssh-keygen -f {{ workdir }}/{{ domain }}/id_rsa -t rsa -N ''
+  when: keypair_stat.stat.exists == False
+
+- name: register public key
+  shell: cat {{ workdir }}/{{ domain }}/id_rsa.pub
+  register: pub_key
+
+- name: prapare meta-data
+  template: src=meta-data.j2 dest={{ workdir }}/{{ domain }}/meta-data
+  register: metadata
+
+- name: prepare user-data
+  copy: src=user-data dest={{ workdir }}/{{ domain }}/user-data
+  register: userdata
+
+- name: config drive exists
+  stat: path={{ workdir }}/{{ domain }}/config.img
+  register: config_drive_stat
+
+- name: create config drive
+  shell: genisoimage -o config.img -V cidata -r -J meta-data user-data chdir={{ workdir }}/{{ domain }}
+  when: metadata|changed or userdata|changed or config_drive_stat.stat.exists == False
+
+- name: define libvirt domain
+  virt: name={{ domain }} command=define xml={{ lookup('template', 'domain.xml.j2') }}
+
+- name: start domain
+  virt: name={{ domain }} state=running
+
+- name: find ip of domain
+  shell: virsh domifaddr {{ domain }} | grep ipv4
+  ignore_errors: yes
+  until: domifaddr.stdout_lines|length > 0
+  register: domifaddr # domain ip: domifaddr.stdout.split()[-1] | ipaddr('address')
+
+- shell: virsh domiflist {{ domain }} | grep {{ item.name }}
+  with_items: "{{ networks }}"
+  register: domiflist
+
+- name: add domain to inventory
+  add_host: name={{ domifaddr.stdout.split()[-1] | ipaddr('address') }} groups=domain ansible_ssh_private_key_file={{ workdir }}/{{ domain }}/id_rsa domiflist={{ domiflist }}

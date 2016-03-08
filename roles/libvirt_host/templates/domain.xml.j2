@@ -1,0 +1,35 @@
+<domain type='kvm'>
+  <name>{{ domain }}</name>
+  <memory unit='KiB'>{{ memory_KiB }}</memory>
+  <vcpu>{{ vcpus }}</vcpu>
+  <os>
+    <type arch="x86_64">hvm</type>
+  </os>
+  <clock sync="localtime"/>
+  <devices>
+    <emulator>/usr/bin/qemu-kvm</emulator>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='{{ volumes_directory }}/{{ volume_name }}'/>
+      <backingStore/>
+      <target dev='vda' bus='virtio'/>
+      <alias name='virtio-disk0'/>
+    </disk>
+    <disk type='file' device='cdrom'>
+      <driver name='qemu' type='raw'/>
+      <source file='{{ workdir }}/{{ domain }}/config.img'/>
+      <backingStore/>
+      <target dev='hda' bus='ide'/>
+      <readonly/>
+      <alias name='ide0-0-0'/>
+      <address type='drive' controller='0' bus='0' target='0' unit='0'/>
+    </disk>
+    {% for network in networks %}
+    <interface type='network'>
+      <source network='{{ network.name }}'/>
+      <model type='virtio'/>
+    </interface>
+    {% endfor %}
+    <graphics type='vnc' port='-1'/>
+  </devices>
+</domain>

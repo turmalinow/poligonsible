@@ -1,0 +1,17 @@
+images_directory: /path/to/images
+volumes_directory: /path/to/volumes
+
+domain: poligonsible
+domain_user: centos
+image_name: CentOS-7-x86_64-GenericCloud-1602.qcow2
+volume_name: poligonsible.qcow2
+workdir: /home/fedora/libvirt
+
+vcpus: 2
+memory_KiB: 2097152
+
+networks:
+  - name: isolated_mgmt0
+    alias: mgmt0
+  - name: default
+    alias: nat0

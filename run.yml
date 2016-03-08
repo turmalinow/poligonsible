@@ -1,0 +1,14 @@
+- hosts: 127.0.0.1
+  become: yes
+  vars_files:
+    - vars/main.yml
+  roles:
+    - libvirt_host
+
+- hosts: domain
+  become: yes
+  vars_files:
+    - vars/main.yml
+  user: "{{ domain_user }}"
+  roles:
+    - domain

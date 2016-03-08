@@ -1,0 +1,9 @@
+- wait_for: port=22
+
+
+- name: prepare persistent-net file
+  template: src=70-persistent-net.rules.j2 dest=/etc/udev/rules.d/70-persistent-net.rules
+
+- name: prepare interface config file
+  template: src=ifcfg-ethx.j2 dest=/etc/sysconfig/network-scripts/ifcfg-{{ item.alias }}
+  with_items: "{{ networks }}"
